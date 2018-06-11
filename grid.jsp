@@ -190,7 +190,7 @@ div#menu
     <td><font size ="3" color="<%=myColor%>"><A HREF="liquidity.jsp?"><font size ="6" color="f8be8f">
         Cash</A><br><font size ="2"><A HREF="currentInterpretation.jsp">Currency</A> On Hand
 		</td>
-<td><font size ="3" color="<%=myColor%>"><A HREF="castle.jsp?"><font size ="6" color="f8be8f">
+	<td><font size ="3" color="ffffff"><A HREF="castle.jsp?"><font size ="6" color="blue">
         Castle</A><br><font size ="2"><A HREF="Manage1934INE.html">Quadraplex</A> 
 		</td>		
     <td><font size ="3" color="ffffff"><A HREF="equities.jsp?"><font size ="6" color="ffffff">
