@@ -107,7 +107,7 @@
         </init-param>
 		<init-param>
 		<param-name>APP_ROOT</param-name>
-        <param-value>/Geist</param-value>
+        <param-value>/Geist/</param-value>
         </init-param>
 		<init-param>
 		<param-name>CASH_MENU</param-name>
