@@ -28,7 +28,8 @@
   </description>
   
     
-
+<!-- These are entries that reflect "DB 1": Quatrarian -->
+<!-- The are entries that reflect "DB A": chombojv_rojomoja -->
 <resource-ref>
     <description>DB Connection</description>
     <res-ref-name>jdbc/Quatrarian</res-ref-name>
