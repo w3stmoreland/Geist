@@ -37,6 +37,10 @@
     <res-auth>Container</res-auth>
 </resource-ref>
 
+ <servlet><servlet-name>UsersListServlet</servlet-name>
+    <servlet-class>mod.Control.UsersListServlet</servlet-class>
+</servlet>
+
  <servlet><servlet-name>HeadGear</servlet-name>
     <servlet-class>mod.Control.HeadGear</servlet-class>
 </servlet>
@@ -53,7 +57,7 @@
         </init-param>
 		<init-param>
 		<param-name>APP_ROOT</param-name>
-        <param-value>/Geist</param-value>
+        <param-value>/Geist/</param-value>
         </init-param>
 		<init-param>
 		<param-name>USER_MENU</param-name>
@@ -117,8 +121,17 @@
 		<init-param>
 		<param-name>NO_ID</param-name>
         <param-value>identify.jsp</param-value>
-        </init-param>		
+        </init-param>	
+		<init-param>
+		<param-name>RESOURCE_STREAM</param-name>
+        <param-value>/WEB-INF/properties/db.properties</param-value>	
+		</init-param>		
 </servlet>
+
+<servlet-mapping>
+    <servlet-name>UsersListServlet</servlet-name>
+    <url-pattern>/Geist/UsersListServlet</url-pattern>
+</servlet-mapping>  
 
 <servlet-mapping>
     <servlet-name>BlackServerTime</servlet-name>
