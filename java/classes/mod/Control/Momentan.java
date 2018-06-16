@@ -16,13 +16,15 @@ public class Momentan extends HttpServlet
 {
     private static final 
     long serialVersionUID = 1L;    
-
+    private InputStream inputStream = null;
+    private static String NO_ID = ""; 
     private static String VERSION = ""; 
     private static String APP_ROOT = "";    
     private static String USER_MENU = "";
     private static String CASH_MENU = "";
     private static String ADMIN_STATUS = "";
-    private static String GEIST_REQUEST_DISPATCH = "";
+    private static String RESOURCE_STREAM = "";
+    private static String GEIST_REQUEST_DISPATCH = "";    
     private Benutzerkontozugriff benutzerkontozugriff;
     mod.ValueObject.ApproximatedCashBalance NullCashBalance = null;
     private mod.ValueObject.Thug HospitalityThug = new mod.ValueObject.Thug( "guest" );
@@ -32,9 +34,10 @@ public class Momentan extends HttpServlet
 	  super.init(config);
       long t = System.currentTimeMillis();
       String Time = new java.util.Date(t).toString();
+      RESOURCE_STREAM = config.getInitParameter("RESOURCE_STREAM");
       System.out.println( "\t<Momentan is instantiated: "+Time+">" );
-	  InputStream inputStream = this.getServletContext().getResourceAsStream("/WEB-INF/properties/rojo.properties");
-	
+      inputStream = this.getServletContext().getResourceAsStream(RESOURCE_STREAM);
+
 		if(inputStream != null)
 		{
             this.benutzerkontozugriff = new Benutzerkontozugriff(inputStream);
@@ -44,12 +47,10 @@ public class Momentan extends HttpServlet
             System.out.println( "\t<Momentan is not instantiated>" );
         }		
 
+      NO_ID = config.getInitParameter("NO_ID");
       VERSION = config.getInitParameter("VERSION");
       APP_ROOT = config.getInitParameter("APP_ROOT");	  
-	  USER_MENU = config.getInitParameter("USER_MENU");
       CASH_MENU = config.getInitParameter("CASH_MENU");
-      ADMIN_STATUS = config.getInitParameter("ADMIN_STATUS");
-	  GEIST_REQUEST_DISPATCH = config.getInitParameter("GEIST_REQUEST_DISPATCH");
       return ;
 	}
 
@@ -57,7 +58,7 @@ public class Momentan extends HttpServlet
     private mod.ValueObject.Thug geistFromSession( HttpSession ses ){
        mod.ValueObject.Thug tT = null;
 
-       System.out.println( "\t<Momentan geistFromSession:"+
+       System.out.println( "\t<Momentan geistFromSession: "+
        ses.getAttribute("THUG")+">" );
 
        tT = (mod.ValueObject.Thug) ses.getAttribute("THUG");
@@ -86,11 +87,24 @@ public class Momentan extends HttpServlet
 	
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException 
     {
-    	String forward = "";        
+        String forward = "";
+        String postUp = CASH_MENU;    
+        String newFiscalDirection = "grid.jsp";    
         String dispatchUpdateAcctBalance = null;
         String dispatchCashAcctManagement = null;
-        System.out.println("\n\t<Momentan.doPost>\n");
-        mod.ValueObject.ApproximatedCashBalance acb = null;       
+
+        if(Konversation.hasValidSession(request)==false)
+        {
+            System.out.println("\n\t<Momentan.doPost with no Session>\n");
+            postUp = NO_ID ;
+        }
+
+        if(Konversation.hasValidSession(request))
+        {
+            System.out.println("\n\t<Momentan.doPost>\n");
+        }
+
+        mod.ValueObject.ApproximatedCashBalance acb = null;               
         dispatchUpdateAcctBalance = (String)request.getParameter("updateAcctBalance");
         dispatchCashAcctManagement = (String)request.getParameter("cashAcctManagement");
 
@@ -98,7 +112,7 @@ public class Momentan extends HttpServlet
             && dispatchUpdateAcctBalance.equals("updateAcctBalance"))
         {
             System.out.println( "\t<Momentan doPost, updateAcctBalance>" );
-            acb = updateAccountBalance( request );
+            acb = updateAccountBalance( request, benutzerkontozugriff );
         }
 
         if((dispatchCashAcctManagement != null) && dispatchCashAcctManagement.equals("cashAcctManagement"))
@@ -107,7 +121,13 @@ public class Momentan extends HttpServlet
             acb = cashAccountManagement( request );
         }
 
-        response.sendRedirect(CASH_MENU);            
+        if(acb==null) newFiscalDirection = "staleSession.jsp" ;
+        
+        // (URL) = VALUE
+        // ("/") = "http://localhost:9090/"
+        // ("/" + "APP_ROOT" + "newFiscalDirection") 
+        response.sendRedirect( APP_ROOT +  newFiscalDirection );        
+
     	return ;
     }
 
@@ -120,9 +140,15 @@ public class Momentan extends HttpServlet
         java.lang.String TargetAccount = null;
         java.lang.String BalanceUpdate = null; 
         String Time = new java.util.Date(t).toString();   
-        myThug = geistFromSession(request.getSession());     
+        myThug = geistFromSession(request.getSession());    
+
         mod.ValueObject.ApproximatedCashBalance mgtCashBalance = null;
+        mod.ValueObject.ApproximatedCashBalance nullCashBalance = null;
         mod.ValueObject.UpdateBalanceMessage updateBalanceMessage = null;
+
+        if(nullCashBalance==null) 
+            return nullCashBalance;
+
         System.out.println( "\t<mod.Control.Momentan.cashAccountManagement: "+Time+">" );    
 
         if(myThug.equals( HospitalityThug )) {
@@ -165,7 +191,111 @@ public class Momentan extends HttpServlet
         return mgtCashBalance;    
     }
 
+    private mod.ValueObject.ApproximatedCashBalance updateAccountBalance( HttpServletRequest request, Benutzerkontozugriff kontozugriff){
+        java.lang.String transTtype = "";
+        java.lang.String whoIsThis = null;
+        long t = System.currentTimeMillis();
+        mod.ValueObject.Thug myThug = null;        
+        java.lang.String TargetAccount = null;
+        java.lang.String BalanceUpdate = null;           
+        String Time = new java.util.Date(t).toString();
+        mod.ValueObject.ApproximatedCashBalance uCashBalance = null;
+        
+        if(kontozugriff==null)
+           kontozugriff = new Benutzerkontozugriff(inputStream );
 
+        System.out.println( "\t<mod.Control.Momentan.updateAccountBalance: "+Time+">" );
+
+        // Web boundary: User;
+        myThug = geistFromSession(request.getSession());
+
+        if(myThug.equals( HospitalityThug )) 
+        {
+            System.out.println("\tFound, \"HospitalityThug\", but did not find a requester identity");
+            return uCashBalance;
+        }
+
+        whoIsThis = (String) myThug.getCodename();
+        System.out.println("\t[whoIsThis] " + whoIsThis );  
+        if(whoIsThis==null) 
+        {
+            System.out.println( "\t[updateAccountBalance] whoIsThis is null." );
+            return uCashBalance;
+        }
+
+        // Web boundary: Account;
+        //TargetAccount = (String) request.getQueryString() ;
+        TargetAccount = (String) request.getParameter("fromSourceAcct") ;
+        System.out.println("\t[Account] " + TargetAccount );  
+        if(TargetAccount==null) 
+        {
+            System.out.println( "\t[updateAccountBalance] TargetAccount is null." );
+            return uCashBalance;
+        }
+
+        uCashBalance = kontozugriff.getUserBalance( whoIsThis.trim(), new Integer(TargetAccount) );
+
+        System.out.println( "\t[updateAccountBalance] TargetAccount:" + TargetAccount );
+
+        System.out.println( "\t[updateAccountBalance] Balance:" + uCashBalance.getBalanceInDollars() );
+
+        // Web boundary: Amount;
+        BalanceUpdate = (String) request.getParameter("updateAmountInput") ;
+        System.out.println("\t[BalanceUpdate] " + BalanceUpdate );
+        if(BalanceUpdate==null) 
+        {
+            System.out.println( "\t[updateAccountBalance] BalanceUpdate is null." );
+            return uCashBalance;
+        }
+
+        // Web boundary: Operation, subtraction;
+        transTtype = (String) request.getParameter("withdrawalRadio");        
+        if(transTtype != null && transTtype.equals("withdrawal"))
+        {
+            mod.ValueObject.ApproximatedCashBalance withdrawalApproximateCashBalance = null;
+            System.out.println("\t[Withdrawal] " + transTtype ); 
+
+            withdrawalApproximateCashBalance = benutzerkontozugriff.createAccountWithdrawal( 
+                    TargetAccount, whoIsThis, new Float(BalanceUpdate) );
+
+            UpdateBalanceMessage updateBalanceMessage = new UpdateBalanceMessage( uCashBalance,  
+                withdrawalApproximateCashBalance, TargetAccount, whoIsThis
+                );
+                
+                  UpdateBalanceMessage.recordUpdateBalance( updateBalanceMessage ) ;
+
+            return withdrawalApproximateCashBalance;
+        }
+
+        // Web boundary: Operation, addition;
+        transTtype = (String) request.getParameter("depositRadio");
+        if(transTtype != null && transTtype.equals("deposit"))
+        {
+            mod.ValueObject.ApproximatedCashBalance depositApproximateCashBalance = null;
+            System.out.println("\t[Deposit] " + transTtype ); 
+
+            depositApproximateCashBalance = benutzerkontozugriff.createAccountDeposit( 
+                    TargetAccount, whoIsThis, new Float(BalanceUpdate) );
+
+            UpdateBalanceMessage updateBalanceMessage = new UpdateBalanceMessage( uCashBalance,  
+                depositApproximateCashBalance, TargetAccount, whoIsThis
+                );
+
+                UpdateBalanceMessage.recordUpdateBalance( updateBalanceMessage ) ;
+
+            return depositApproximateCashBalance;
+        }
+
+        if(transTtype==null) 
+        {
+            System.out.println( "\t[updateAccountBalance] depositRadio is null." );
+            return uCashBalance;
+        }
+
+        return uCashBalance;
+    }
+    
+    
     private mod.ValueObject.ApproximatedCashBalance updateAccountBalance( HttpServletRequest request ){
         java.lang.String transTtype = "";
         java.lang.String whoIsThis = null;
@@ -175,12 +305,6 @@ public class Momentan extends HttpServlet
         java.lang.String BalanceUpdate = null;           
         String Time = new java.util.Date(t).toString();
         mod.ValueObject.ApproximatedCashBalance uCashBalance = null;
-
-        /**
-        Event = InformationOntology( Category  )
-        Statistic = UniqueInformationEvent( time, Observation  )
-        Pattern = AggregateInformationArray( time, Observation[time] )
-        */
 
         System.out.println( "\t<mod.Control.Momentan.updateAccountBalance: "+Time+">" );
 
@@ -391,9 +515,24 @@ public class Momentan extends HttpServlet
 };
 
 
+class UnStrung{
+    static {
+        System.out.println("\t<UnStrung>");
+    }
+
+    public static String rightHere( HttpServletRequest request ){
+        String hereIAm = "";
+        if(request.getContextPath()!=null) hereIAm = request.getContextPath();
+        System.out.println("\t<UnStrung.rightHere "+hereIAm+">");
+        return hereIAm ;
+    }
+
+};
+
+
 class Konversation{
     
-    public Konversation( ){
+    static {
         System.out.println("\t<Konversation>");
     }
     
@@ -404,6 +543,8 @@ class Konversation{
         // session is invalid;
         HttpSession session = request.getSession(false);  
 
+        System.out.println("\t<Konversation.hasValidSession>");
+
         if(session==null) 
         return false;
 
@@ -411,10 +552,12 @@ class Konversation{
             // You have a current 
             // OR existing 
             // OR old Session;
-            session.invalidate();  // invalidate session - this will remove any old attrs hold in the session
-
+            //session.invalidate();  // invalidate session - this will remove any old attrs hold in the session
+            System.out.println("\t<Konversation.hasValidSession, existing: "+hasValidSession+">");
         }
         
+        System.out.println("\t<hasValidSession returned>");
+
         return hasValidSession;
     }
 
